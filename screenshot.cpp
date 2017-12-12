@@ -12,6 +12,7 @@
 #include <QIcon>
 #include <QDebug>
 #include <QPainter>
+#include <QFileDialog>
 
 screenshot::screenshot(QWidget *parent) :
     QWidget(parent),
@@ -21,6 +22,18 @@ screenshot::screenshot(QWidget *parent) :
 
     // читаем настройки автозапуска из файла настроек
     QSettings *settings = new QSettings("settings.conf",QSettings::IniFormat);
+
+    bool copylastfile = settings->value("settings/copylastfile",false).toBool();
+
+    // скрываем избыточные контролы, чтобы не перегружать форму
+    if (!copylastfile) {
+        ui->toolButton_2->hide();
+        ui->saveDicpath_2->hide();
+    }
+    else {
+        ui->checkBoxcopyTo->setChecked(true);
+    }
+
     bool autorunset = settings->value("settings/autostart",false).toBool();
     ui->autostartcheckBox_3->setChecked(autorunset);
 
@@ -62,6 +75,9 @@ screenshot::screenshot(QWidget *parent) :
         connect(cleentimer,SIGNAL(timeout()),this,SLOT(clearoldscreens()));
         cleentimer->start(86400);
     }
+
+    // настройки дублирования последнего скрина в отдельную папку
+    ui->saveDicpath_2->setText(settings->value("settings/copylastscreento","\\\\Out-ubuntu\\share\\share\\tmp\\test.png").toString());
 }
 
 // очистка старых скринов
@@ -141,6 +157,7 @@ void screenshot::on_pushButton_clicked()
     // Применяем выбранные настройки
     QSettings *settings = new QSettings("settings.conf",QSettings::IniFormat);
     savedirectory = ui->saveDicpath->text();
+
     if (!QDir(savedirectory).exists())
     {
         // такой папки не существует
@@ -154,12 +171,40 @@ void screenshot::on_pushButton_clicked()
             // создадим папку
             QDir dir = QDir::root();
             dir.mkdir(ui->saveDicpath->text());
+            // создали новую папку - обновим путь с её учетом
+            ui->saveDicpath->setText(dir.absolutePath());
         }
         else {
             delete settings;
             return;
         }
 
+    }
+
+    if (ui->checkBoxcopyTo->isChecked())
+    {
+        // copy the last screen to another folder
+        copylastscreento = ui->saveDicpath_2->text();
+        if (!QFileInfo::exists(copylastscreento)) {
+            // такой папки не существует
+            QMessageBox pmb;
+            pmb.setText("Внимание!");
+            pmb.setInformativeText("<b>Файл для копирования последнего скрина не существует или указан неверно. Создать такой файл?</b>");
+            pmb.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            int n = pmb.exec();
+            if (n == QMessageBox::Yes)
+            {
+                // создадим такой файл
+                QFile f( copylastscreento );
+                f.open( QIODevice::WriteOnly );
+                f.close();
+            }
+            else {
+                ui->checkBoxcopyTo->setChecked(false);
+                copylastscreento.clear();
+                ui->saveDicpath_2->clear();
+            }
+        }
     }
 
     // compress
@@ -175,10 +220,20 @@ void screenshot::on_pushButton_clicked()
     // autosort
     settings->setValue("settings/autosort",ui->FSortcheckBox->isChecked());
 
+    // copylastfile
+    settings->setValue("settings/copylastfile",ui->checkBoxcopyTo->isChecked());
+
     // dir
     if (ui->saveDicpath->text().length() > 0)
     {
         settings->setValue("settings/directory",ui->saveDicpath->text());
+        settings->sync();
+    }
+
+    // copyTo
+    if (ui->saveDicpath_2->text().length() > 0)
+    {
+        settings->setValue("settings/copylastscreento",ui->saveDicpath_2->text());
         settings->sync();
     }
 
@@ -188,7 +243,6 @@ void screenshot::on_pushButton_clicked()
         settings->setValue("settings/filetem",ui->filenameEdit->text());
         settings->sync();
     }
-
 
     savefilename = ui->filenameEdit->text();
 
@@ -345,6 +399,28 @@ void screenshot::shootScreen()
         int n = pmb.exec();
     }
 
+    // copyTo
+    // допустим полный путь к файлу верен, но файла пока не существует
+    QString copyToPath = copylastscreento;
+    if (!QFileInfo::exists(copylastscreento))
+    {
+        // проверяем существует ли родительская директория
+        if (QFileInfo(copylastscreento).dir().exists())
+        {
+            // просто пишем файл
+            originalPixmap.save(copyToPath,format.toStdString().c_str(),ui->compressspinBox->value());
+            return;
+        }
+        else {
+            // директория не корректная, выходим
+            return;
+        }
+    }
+    else {
+        // файл уже существует, просто перезаписываем его
+        originalPixmap.save(copyToPath,format.toStdString().c_str(),ui->compressspinBox->value());
+    }
+
 }
 
 void screenshot::on_addnumcheckBox_clicked()
@@ -391,5 +467,32 @@ void screenshot::on_checkBoxautoclean_clicked()
     else {
         ui->comboBoxautoclean->show();
         ui->label_7autoclean->show();
+    }
+}
+
+void screenshot::on_toolButton_2_clicked()
+{
+    QString fileName = QFileDialog::getSaveFileName(this,tr("Выберите файл, в который будет сохраняться копия последнего скриншота"),"",tr("PNG files (*.png);;All Files (*)"));
+    QFile f( fileName );
+    f.open( QIODevice::WriteOnly );
+    f.close();
+    ui->saveDicpath_2->setText(fileName);
+}
+
+void screenshot::on_checkBoxcopyTo_clicked()
+{
+
+}
+
+void screenshot::on_checkBoxcopyTo_clicked(bool checked)
+{
+    if (checked)
+    {
+        ui->toolButton_2->show();
+        ui->saveDicpath_2->show();
+    }
+    else {
+        ui->toolButton_2->hide();
+        ui->saveDicpath_2->hide();
     }
 }

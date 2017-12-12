@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>474</width>
-    <height>349</height>
+    <height>392</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <x>10</x>
      <y>40</y>
      <width>451</width>
-     <height>301</height>
+     <height>341</height>
     </rect>
    </property>
    <property name="title">
@@ -29,7 +29,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>250</y>
+      <y>300</y>
       <width>141</width>
       <height>31</height>
      </rect>
@@ -42,7 +42,7 @@
     <property name="geometry">
      <rect>
       <x>170</x>
-      <y>250</y>
+      <y>300</y>
       <width>75</width>
       <height>31</height>
      </rect>
@@ -55,7 +55,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>220</y>
+      <y>270</y>
       <width>411</width>
       <height>26</height>
      </rect>
@@ -126,7 +126,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>250</y>
+      <y>300</y>
       <width>121</width>
       <height>31</height>
      </rect>
@@ -139,7 +139,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>160</y>
+      <y>190</y>
       <width>402</width>
       <height>30</height>
      </rect>
@@ -184,7 +184,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>190</y>
+      <y>230</y>
       <width>129</width>
       <height>30</height>
      </rect>
@@ -266,7 +266,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>130</y>
+      <y>160</y>
       <width>415</width>
       <height>22</height>
      </rect>
@@ -279,7 +279,7 @@
       <string>Автоматическая очистка старых скринов</string>
      </property>
     </widget>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <layout class="QHBoxLayout" name="horizontalLayout_7">
       <item>
        <widget class="QLabel" name="label_7autoclean">
@@ -315,6 +315,40 @@
      </layout>
     </widget>
    </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>121</y>
+      <width>421</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_8">
+     <item>
+      <widget class="QCheckBox" name="checkBoxcopyTo">
+       <property name="text">
+        <string>Сохранять последний кадр отдельно</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="toolButton_2">
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="saveDicpath_2">
+       <property name="text">
+        <string>\\Out-ubuntu\share\share\tmp</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <zorder>splitter</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>pushButton</zorder>
@@ -324,9 +358,7 @@
    <zorder>layoutWidget</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>pushButton_3</zorder>
-   <zorder>checkBoxautoclean</zorder>
-   <zorder>comboBoxautoclean</zorder>
-   <zorder>label_7autoclean</zorder>
+   <zorder>horizontalLayoutWidget</zorder>
   </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
@@ -338,7 +370,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>AutoScreenShot v1.3 by odexed@mail.ru</string>
+    <string>AutoScreenShot v1.4 by odexed@mail.ru</string>
    </property>
   </widget>
  </widget>

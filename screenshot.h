@@ -17,6 +17,7 @@ public:
     explicit screenshot(QWidget *parent = 0);
     QString savefilename;
     QString savedirectory;
+    QString copylastscreento;
     int inteval;
     QTimer mtimer;
     QAction *minimizeAction;
@@ -51,6 +52,12 @@ private slots:
     void on_checkBoxautoclean_clicked();
 
     void clearoldscreens();
+
+    void on_toolButton_2_clicked();
+
+    void on_checkBoxcopyTo_clicked();
+
+    void on_checkBoxcopyTo_clicked(bool checked);
 
 private:
     void createOptionsGroupBox();
