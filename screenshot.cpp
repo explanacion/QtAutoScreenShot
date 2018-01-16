@@ -402,8 +402,10 @@ void screenshot::shootScreen()
         }
 
     }
-    painter.setFont(QFont("Arial",14));
-    painter.drawText(10,5,p,30,0,freespaceinfo);
+    if (ui->checkBoxfreespace) {
+        painter.setFont(QFont("Arial",14));
+        painter.drawText(10,5,p,30,0,freespaceinfo);
+    }
     QPixmap originalPixmap = final;
 
     // save
