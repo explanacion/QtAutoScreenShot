@@ -13,6 +13,7 @@
 #include <QDebug>
 #include <QPainter>
 #include <QFileDialog>
+#include <QStorageInfo>
 
 screenshot::screenshot(QWidget *parent) :
     QWidget(parent),
@@ -78,6 +79,9 @@ screenshot::screenshot(QWidget *parent) :
 
     // настройки дублирования последнего скрина в отдельную папку
     ui->saveDicpath_2->setText(settings->value("settings/copylastscreento","\\\\Out-ubuntu\\share\\share\\tmp\\test.png").toString());
+
+    // добавлять информацию о свободном месте на дисках
+    ui->checkBoxfreespace->setChecked(settings->value("settings/showfreehdspace",false).toBool());
 }
 
 // очистка старых скринов
@@ -223,6 +227,9 @@ void screenshot::on_pushButton_clicked()
     // copylastfile
     settings->setValue("settings/copylastfile",ui->checkBoxcopyTo->isChecked());
 
+    // showfreediskspace
+    settings->setValue("settings/showfreehdspace",ui->checkBoxfreespace->isChecked());
+
     // dir
     if (ui->saveDicpath->text().length() > 0)
     {
@@ -354,22 +361,49 @@ void screenshot::shootScreen()
         if (h < pix.height()) h = pix.height();
         scrs << pix;
     }
+    // for disk info
+    if (ui->checkBoxfreespace)
+        h = h + 30;
     QPixmap final(w, h);
     QPainter painter(&final);
     final.fill(Qt::black);
 
+    // freedisk info
+    QString freespaceinfo("Free disk space information: ");
+    foreach (const QStorageInfo &storage, QStorageInfo::mountedVolumes()) {
+        if (storage.isValid() && storage.isReady() && !storage.isReadOnly()) {
+            // only local drives
+            if (storage.device().contains("\\\\?\\") || storage.device().contains("/dev/")) {
+                int totalGb = storage.bytesTotal()/(1024*1024*1024);
+                int freeGb = storage.bytesFree()/(1024*1024*1024);
+
+                float used = 100-100*(float)storage.bytesFree()/storage.bytesTotal();
+                //qDebug() << storage.displayName() << QString::number(used,'f',2) << totalGb;
+                freespaceinfo.append(storage.displayName() + " " + QString::number(used,'f',2) + "% used. (" + QString::number(totalGb - freeGb) + "/" + QString::number(totalGb) + "Gb) ");
+            }
+        }
+    }
 
     //foreach (QPixmap scr, scrs) {
     //    painter.drawPixmap(QPoint(p, 0), scr);
     //    p += scr.width();
     //}
 
+    int toY = 0;
     for (int i=scrs.length() - 1; i >= 0; i--)
     {
-        painter.drawPixmap(QPoint(p,0),scrs[i]);
+        if (ui->checkBoxfreespace) {
+            toY += 30;
+        }
+        painter.drawPixmap(QPoint(p,toY),scrs[i]);
         p += scrs[i].width();
-    }
+        if (ui->checkBoxfreespace) {
+            painter.fillRect(0,0,p,30,Qt::white);
+        }
 
+    }
+    painter.setFont(QFont("Arial",14));
+    painter.drawText(10,5,p,30,0,freespaceinfo);
     QPixmap originalPixmap = final;
 
     // save
