@@ -43,11 +43,9 @@ screenshot::screenshot(QWidget *parent) :
 
     savedirectory = ui->saveDicpath->text();
     this->showTrayIcon();
-    if (ui->autostartcheckBox_3->isChecked())
-    {
-        connect(&mtimer, SIGNAL(timeout()), this, SLOT(shootScreen()));
-        mtimer.start(1000 * ui->IntervalspinBox->value());
-    }
+
+    // настройки паузы
+    ui->IntervalspinBox->setValue(settings->value("settings/interval",60).toInt());
 
     // формат
     ui->formatcomboBox->setCurrentIndex(ui->formatcomboBox->findText(settings->value("settings/format","png").toString()));
@@ -59,8 +57,7 @@ screenshot::screenshot(QWidget *parent) :
     ui->saveDicpath->setText(settings->value("settings/directory","c:\\screens").toString());
     // настройки шаблона имени файла
     ui->filenameEdit->setText(settings->value("settings/filetem","screen").toString());
-    // настройки паузы
-    ui->IntervalspinBox->setValue(settings->value("settings/interval",60).toInt());
+
     // настройки автоматической очистки скринов
     ui->checkBoxautoclean->setChecked(settings->value("settings/autoclean",false).toBool());
     if (!ui->checkBoxautoclean->isChecked())
@@ -82,6 +79,12 @@ screenshot::screenshot(QWidget *parent) :
 
     // добавлять информацию о свободном месте на дисках
     ui->checkBoxfreespace->setChecked(settings->value("settings/showfreehdspace",false).toBool());
+
+    if (autorunset)
+    {
+        connect(&mtimer, SIGNAL(timeout()), this, SLOT(shootScreen()));
+        mtimer.start(1000 * ui->IntervalspinBox->value());
+    }
 }
 
 // очистка старых скринов
@@ -98,7 +101,7 @@ void screenshot::clearoldscreens()
         QString nyear = tmpdatetime.toString("yyyy");
         QString lyear = limitbefore.toString("yyyy");
         tmpdatetime=tmpdatetime.addMonths(-1);
-        qDebug() << tmpdatetime.toString("MM");
+        //qDebug() << tmpdatetime.toString("MM");
         // сначала удаляем папки, созданные в этом году
         n = n - 1; // предыдущий месяц
         while (n > 0) {
@@ -145,6 +148,7 @@ void screenshot::clearoldscreens()
         foreach (QString dirFile, dir.entryList()) {
             QDateTime crfile=QFileInfo(dirFile).created();
             if (crfile < limitbefore) {
+                qDebug() << dirFile;
                 dir.remove(dirFile);
             }
         }
@@ -379,7 +383,7 @@ void screenshot::shootScreen()
 
                 float used = 100-100*(float)storage.bytesFree()/storage.bytesTotal();
                 //qDebug() << storage.displayName() << QString::number(used,'f',2) << totalGb;
-                freespaceinfo.append(storage.displayName() + " " + QString::number(used,'f',2) + "% used. (" + QString::number(totalGb - freeGb) + "/" + QString::number(totalGb) + "Gb) ");
+                freespaceinfo.append(storage.rootPath() + " " + storage.name() + " " + QString::number(used,'f',2) + "% used. (" + QString::number(totalGb - freeGb) + "/" + QString::number(totalGb) + "Gb) ");
             }
         }
     }
@@ -421,7 +425,9 @@ void screenshot::shootScreen()
     {
         initialPath = ui->saveDicpath->text() + "\\" + nowdatetime.toString("yyyy") + "\\" + nowdatetime.toString("MM") + "\\" + nowdatetime.toString("dd") + "\\";
     }
+    // основной файл
     QString fileName = initialPath + "screen_" + savefilename;
+
     if (!QDir(initialPath).exists()) {
         // если папки нет - создаем её
         QDir dir = QDir::root();
@@ -437,6 +443,7 @@ void screenshot::shootScreen()
 
     // copyTo
     // допустим полный путь к файлу верен, но файла пока не существует
+    copylastscreento = ui->saveDicpath_2->text();
     QString copyToPath = copylastscreento;
     if (!QFileInfo::exists(copylastscreento))
     {
@@ -459,15 +466,6 @@ void screenshot::shootScreen()
 
 }
 
-void screenshot::on_addnumcheckBox_clicked()
-{
-}
-
-
-
-void screenshot::on_datatimecheckBox_2_clicked()
-{
-}
 
 void screenshot::on_pushButton_2_clicked()
 {

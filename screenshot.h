@@ -35,10 +35,6 @@ private slots:
 
     void on_pushButton_clicked();
 
-    void on_addnumcheckBox_clicked();
-
-    void on_datatimecheckBox_2_clicked();
-
     void on_pushButton_2_clicked();
 
     void on_pushButton_3_clicked();
