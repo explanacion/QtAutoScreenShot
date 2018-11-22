@@ -14,6 +14,7 @@
 #include <QPainter>
 #include <QFileDialog>
 #include <QStorageInfo>
+#include <QDirIterator>
 
 screenshot::screenshot(QWidget *parent) :
     QWidget(parent),
@@ -66,12 +67,15 @@ screenshot::screenshot(QWidget *parent) :
         ui->comboBoxautoclean->hide();
     }
     else {
+        // по умолчанию очистка файлов с давностью > 1 месяца
         autocleaninterval = settings->value("settings/autocleanperiod",2592000).toInt();
         ui->comboBoxautoclean->setCurrentIndex(ui->comboBoxautoclean->findText(settings->value("settings/autocleaninterval","1 месяц").toString()));
-        // запуск процедуры очистки старых скринов раз в сутки
+        // запуск процедуры очистки старых скринов раз в час
         cleentimer = new QTimer(this);
         connect(cleentimer,SIGNAL(timeout()),this,SLOT(clearoldscreens()));
-        cleentimer->start(86400);
+        cleentimer->start(3600*1000);
+        // первый раз запускаем очистку сразу же
+        clearoldscreens();
     }
 
     // настройки дублирования последнего скрина в отдельную папку
@@ -95,52 +99,45 @@ void screenshot::clearoldscreens()
 
     if (ui->FSortcheckBox->isChecked())
     {
-        // удаляем папки по месяцам
-        int n = tmpdatetime.toString("MM").toInt();
-        int l = limitbefore.toString("MM").toInt();
-        QString nyear = tmpdatetime.toString("yyyy");
-        QString lyear = limitbefore.toString("yyyy");
-        tmpdatetime=tmpdatetime.addMonths(-1);
-        //qDebug() << tmpdatetime.toString("MM");
-        // сначала удаляем папки, созданные в этом году
-        n = n - 1; // предыдущий месяц
-        while (n > 0) {
-            if (n <= l) {
-                // qDebug() << l << " " << n;
-                QString workpath = ui->saveDicpath->text() + "\\" + nyear;
-                QDir tempdir(workpath + "\\" + tmpdatetime.toString("MM"));
-                if (tempdir.exists()) {
-                    tempdir.removeRecursively();
-                }
-            }
-            tmpdatetime=tmpdatetime.addMonths(-1);
-            n--;
+        // проверяем корректность заданной директории
+        QDir dir(ui->saveDicpath->text());
+        if (!dir.exists())
+        {
+            QMessageBox::critical(this,"Ошибка","Не существует указанная папка для сохранения скриншотов",QMessageBox::Ok);
+            return;
         }
-        // теперь переходим к предыдущему году
-        if (lyear.toInt() < nyear.toInt()) {
-            qDebug() << "prevyear";
-            QString workpath = ui->saveDicpath->text() + "\\" + lyear;
-            QDir tempdir(workpath + "\\" + lyear);
-            if (tempdir.exists())
+        // обыскиваем содержимое директории
+        QDirIterator it(ui->saveDicpath->text(), QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            QFile item(it.next());
+            QString curfilename = it.fileName();
+
+            curfilename = curfilename.replace("screen_" + ui->filenameEdit->text(),"");
+            curfilename = curfilename.replace("." + ui->formatcomboBox->currentText(),"");
+            // парсим отсюда дату
+            QDateTime curdt = QDateTime::fromString(curfilename,"yyyy_MM_dd_hh_mm_ss");
+            //qDebug() << curfilename << " " << curdt.isValid();
+            if (curdt.isValid())
             {
-                // определяем подпапки предыдущего года
-                // начальная точка - конец предыдущего года
-                tmpdatetime = QDateTime::fromString(nyear + "-01-01 00:00:00","yyyy-MM-dd hh:mm:ss");
-                tmpdatetime=tmpdatetime.addSecs(-1);
-                while (tmpdatetime > limitbefore) {
-                    QString curmonth = tmpdatetime.toString("MM");
-                    QDir tempdir(workpath + "\\" + lyear + "\\" + curmonth);
-                    if (tempdir.exists())
-                    {
-                        tempdir.removeRecursively();
-                    }
-                    tmpdatetime=tmpdatetime.addMonths(-1);
-                }
+                if (curdt < limitbefore)
+                    item.remove();
+            }
+        }
+        // подчищаем пустые директории
+        QDirIterator folderit(ui->saveDicpath->text(), QDir::AllDirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+        while (folderit.hasNext()) {
+            QString curdirpath = folderit.next();
+            QDir curdir(curdirpath);
+            //qDebug() << curdirpath << " " << curdir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot).count();
+            if (curdir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot).count() == 0)
+            {
+                curdir.removeRecursively();
             }
         }
     }
     else {
         // удаляем просто файлы по дате
+        qDebug() << "simpledelete";
         QString workdir = ui->saveDicpath->text();
         QDir dir(workdir);
         dir.setNameFilters(QStringList() << "*." + ui->formatcomboBox->currentText());
@@ -490,6 +487,10 @@ void screenshot::on_compressspinBox_valueChanged(int arg1)
 void screenshot::on_toolButton_clicked()
 {
     // save file dialog
+    QString DirPath = QFileDialog::getExistingDirectory(this,tr("Укажите папку для сохранения скриншотов"),QDir::currentPath(),QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    QDir f( DirPath );
+    if (f.exists())
+        ui->saveDicpath->setText(DirPath);
 }
 
 void screenshot::on_checkBoxautoclean_clicked()
