@@ -74,8 +74,6 @@ screenshot::screenshot(QWidget *parent) :
         cleentimer = new QTimer(this);
         connect(cleentimer,SIGNAL(timeout()),this,SLOT(clearoldscreens()));
         cleentimer->start(3600*1000);
-        // первый раз запускаем очистку сразу же
-        clearoldscreens();
     }
 
     // настройки дублирования последнего скрина в отдельную папку
@@ -276,6 +274,11 @@ void screenshot::on_pushButton_clicked()
         QDate TempDate = QDate::currentDate();
         TempDate=TempDate.addMonths(-1);
         if (ui->comboBoxautoclean->currentText() == "1 месяц") autocleaninterval=TempDate.daysInMonth()*24*3600;
+        if (ui->comboBoxautoclean->currentText() == "2 месяца") {
+            QDateTime tmp1 = QDateTime(TempDate);
+            QDateTime tmp2 = tmp1.addMonths(-2);
+            autocleaninterval = tmp2.secsTo(tmp1);
+        }
         if (ui->comboBoxautoclean->currentText() == "3 месяца") {
             QDateTime tmp1 = QDateTime(TempDate);
             QDateTime tmp2 = tmp1.addMonths(-3);

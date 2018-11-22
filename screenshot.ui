@@ -317,6 +317,11 @@
         </item>
         <item>
          <property name="text">
+          <string>2 месяца</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>3 месяца</string>
          </property>
         </item>
