@@ -15,6 +15,7 @@
 #include <QFileDialog>
 #include <QStorageInfo>
 #include <QDirIterator>
+#include <QStorageInfo>
 
 screenshot::screenshot(QWidget *parent) :
     QWidget(parent),
@@ -93,7 +94,25 @@ screenshot::screenshot(QWidget *parent) :
 void screenshot::clearoldscreens()
 {
     QDateTime tmpdatetime = QDateTime::currentDateTime();
-    QDateTime limitbefore = tmpdatetime.addMonths(-1).addSecs(-autocleaninterval);
+    // autocleaninterval - число секунд интервала, в течение которого храним скрины, например, 3 месяца будет 7776000 секунд
+    bool nospace = false;
+    if (autocleaninterval == -1)
+    {
+        // особый случай - очистка при нехватке свободного места
+        // в этом случае мы проверяем свободное место на диске
+        QStorageInfo storage(ui->saveDicpath->text());
+        if (storage.isValid() && storage.isReady()) {
+            // если место истекает (свободно меньше 200 мегабайт)
+            int mbsize = storage.bytesAvailable()/1024/1024;
+            if (mbsize < 200)
+            {
+                nospace = true;
+            }
+        }
+    }
+
+    QDateTime limitbefore = tmpdatetime.addSecs(-autocleaninterval);
+
 
     if (ui->FSortcheckBox->isChecked())
     {
@@ -117,7 +136,19 @@ void screenshot::clearoldscreens()
             //qDebug() << curfilename << " " << curdt.isValid();
             if (curdt.isValid())
             {
-                if (curdt < limitbefore)
+                // если места на диске нет
+                if (nospace)
+                {
+                    // все директории, не совпадающие с текущим месяцем удаляем
+                    QString dirYearMonth = tmpdatetime.toString("yyyy") + QDir::separator() + tmpdatetime.toString("MM");
+                    if (it.filePath().indexOf(dirYearMonth) == -1)
+                    {
+                        QDir deldir(it.filePath());
+                        deldir.removeRecursively();
+                    }
+                }
+                // есди скрин старее указанного интервала ъранения, удаляем его
+                else if (curdt < limitbefore)
                     item.remove();
             }
         }
@@ -142,7 +173,7 @@ void screenshot::clearoldscreens()
         dir.setFilter(QDir::Files);
         foreach (QString dirFile, dir.entryList()) {
             QDateTime crfile=QFileInfo(dirFile).created();
-            if (crfile < limitbefore) {
+            if (crfile < limitbefore || nospace) {
                 qDebug() << dirFile;
                 dir.remove(dirFile);
             }
@@ -273,7 +304,9 @@ void screenshot::on_pushButton_clicked()
     if (ui->checkBoxautoclean->isChecked()) {
         QDate TempDate = QDate::currentDate();
         TempDate=TempDate.addMonths(-1);
-        if (ui->comboBoxautoclean->currentText() == "1 месяц") autocleaninterval=TempDate.daysInMonth()*24*3600;
+        if (ui->comboBoxautoclean->currentText() == "1 месяц")
+            autocleaninterval=TempDate.daysInMonth()*24*3600;
+        TempDate = QDate::currentDate();
         if (ui->comboBoxautoclean->currentText() == "2 месяца") {
             QDateTime tmp1 = QDateTime(TempDate);
             QDateTime tmp2 = tmp1.addMonths(-2);
@@ -293,6 +326,9 @@ void screenshot::on_pushButton_clicked()
             QDateTime tmp1 = QDateTime(TempDate);
             QDateTime tmp2 = tmp1.addYears(-1);
             autocleaninterval = tmp2.secsTo(tmp1);
+        }
+        if (ui->comboBoxautoclean->currentText() == "Чистить при нехватке места на диске") {
+            autocleaninterval = -1;
         }
 
         settings->setValue("settings/autocleanperiod",autocleaninterval);
