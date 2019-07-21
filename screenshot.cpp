@@ -98,12 +98,13 @@ void screenshot::clearoldscreens()
     bool nospace = false;
     if (autocleaninterval == -1)
     {
-        // особый случай - очистка при нехватке свободного места
-        // в этом случае мы проверяем свободное место на диске
+        // особый случай - очистка только при нехватке свободного места
+        // в этом случае мы проверяем свободное место на диске и чистим все что старше 2 месяцев
         QStorageInfo storage(ui->saveDicpath->text());
         if (storage.isValid() && storage.isReady()) {
             // если место истекает (свободно меньше 200 мегабайт)
             int mbsize = storage.bytesAvailable()/1024/1024;
+            qDebug() << mbsize;
             if (mbsize < 200)
             {
                 nospace = true;
@@ -128,30 +129,48 @@ void screenshot::clearoldscreens()
         while (it.hasNext()) {
             QFile item(it.next());
             QString curfilename = it.fileName();
+            if (curfilename == "..")
+                continue;
+            if (curfilename == ".")
+                continue;
+
+            //qDebug() << it.filePath() << " " << ui->saveDicpath->text() << endl;
 
             curfilename = curfilename.replace("screen_" + ui->filenameEdit->text(),"");
             curfilename = curfilename.replace("." + ui->formatcomboBox->currentText(),"");
             // парсим отсюда дату
             QDateTime curdt = QDateTime::fromString(curfilename,"yyyy_MM_dd_hh_mm_ss");
-            //qDebug() << curfilename << " " << curdt.isValid();
+            //qDebug() << curfilename << " " << curdt.isValid() << curdt.toString(" dd.MM.yyyy hh:mm:ss");
+            //qDebug() << limitbefore.toString(" dd.MM.yyyy hh:mm:ss") << endl;
             if (curdt.isValid())
             {
                 // если места на диске нет
                 if (nospace)
                 {
-                    // все директории, не совпадающие с текущим месяцем удаляем
-                    QString dirYearMonth = tmpdatetime.toString("yyyy") + QDir::separator() + tmpdatetime.toString("MM");
-                    if (it.filePath().indexOf(dirYearMonth) == -1)
+                    // все директории, которые старше 2х последних месяцев, удаляем
+                    //qDebug() << "места нет" << endl;
+                    QStringList pathParts = it.filePath().split('/'); // ("C:", "screens", "2019", "06", "11", "screen_screen2019_06_11_02_18_05.png")
+
+                    QString lastFolder = pathParts.at(pathParts.length() - 3); // месяц
+                    // папка содержит корректное имя - число месяца
+                    // удаляем все что старее 2 месяцев
+                    if (lastFolder.toInt() != 0 && lastFolder.toInt() < QDate::currentDate().addMonths(-1).month())
                     {
-                        QDir deldir(it.filePath());
-                        deldir.removeRecursively();
+                        //qDebug() << it.filePath();
+                        if (it.fileInfo().absoluteDir().exists())
+                        {
+                            QDir deldir(it.fileInfo().absolutePath());
+                            deldir.removeRecursively();
+                        }
                     }
                 }
                 // есди скрин старее указанного интервала ъранения, удаляем его
-                else if (curdt < limitbefore)
+                else if (curdt < limitbefore) {
                     item.remove();
+                }
             }
         }
+        nospace = false;
         // подчищаем пустые директории
         QDirIterator folderit(ui->saveDicpath->text(), QDir::AllDirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
         while (folderit.hasNext()) {
@@ -160,6 +179,7 @@ void screenshot::clearoldscreens()
             //qDebug() << curdirpath << " " << curdir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot).count();
             if (curdir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot).count() == 0)
             {
+                //qDebug() << "подчищаем пустые директории";
                 curdir.removeRecursively();
             }
         }

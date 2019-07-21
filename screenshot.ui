@@ -336,7 +336,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -401,6 +401,7 @@
      </item>
     </layout>
    </widget>
+   <zorder>layoutWidget</zorder>
    <zorder>splitter</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>layoutWidget</zorder>
@@ -412,8 +413,6 @@
    <zorder>layoutWidget</zorder>
    <zorder>pushButton_3</zorder>
    <zorder>horizontalLayoutWidget</zorder>
-   <zorder>comboBoxautoclean</zorder>
-   <zorder>label_7autoclean</zorder>
   </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
@@ -425,7 +424,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>AutoScreenShot v1.8 by odexed@mail.ru</string>
+    <string>AutoScreenShot v1.9 by odexed@mail.ru</string>
    </property>
   </widget>
  </widget>
